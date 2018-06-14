@@ -1,0 +1,227 @@
+# In front of the microservices
+nginx_services:
+  container_name: nginx_services
+  image: org.image.repo.com/nginxservices:latest
+  expose:
+    - "8080"
+  ports:
+    - "8080"
+  net: "host"
+  volumes:
+    - ./config/ui/services_local_nginx.conf:/opt/openresty/nginx/conf/custom/nginx.conf
+
+cart:
+  container_name: cart
+  image: org.image.repo.com/cart-service:latest
+  ports:
+    - "9670:9670"
+  net: "host"
+  extends:
+    file: common.yml
+    service: constants
+  environment:
+    - CONFIG_FILE=/opt/cart-service-0.1/conf/application.conf
+    - JAVA_OPTS=-Xmx256m -Xms256m
+
+legacy_app:
+  container_name: legacy_app
+  image: org.image.repo.com/legacy_app:latest
+  ports:
+    - "9680:9680"
+  net: "host"
+  extends:
+    file: common.yml
+    service: constants
+  extra_hosts:
+    - "legacy.hostname.com:${PRIVATE_IP}"
+  environment:
+    - CONFIG_FILE=/opt/blue-martini-service-0.1/conf/application.conf
+    - JAVA_OPTS=-Xmx256m -Xms256m
+    - LEGACY_URL
+
+product:
+  container_name: product
+  image: org.image.repo.com/product-service:latest
+  # build: ../product-service/docker
+  ports:
+    - "9470:9470"
+  net: "host"
+  extends:
+    file: common.yml
+    service: constants
+  environment:
+    - CONFIG_FILE=/opt/product-service-0.1/conf/application.conf
+
+inventory:
+  container_name: inventory
+  image: org.image.repo.com/inventory-service:latest
+  # build: ../inventory-service/docker
+  mem_limit: 256m
+  ports:
+    - "9490:9490"
+  net: "host"
+  extends:
+    file: common.yml
+    service: constants
+  environment:
+    - CONFIG_FILE=/opt/inventory-service-0.1/conf/application.conf
+    - JAVA_OPTS=-Xmx256m -Xms256m
+
+price:
+  container_name: price
+  image: org.image.repo.com/price-service:latest
+  # build: ../price-service/docker
+  ports:
+    - "9480:9480"
+  net: "host"
+  extends:
+    file: common.yml
+    service: constants
+  environment:
+    - CONFIG_FILE=/opt/price-service-0.1/conf/application.conf
+
+reviews:
+  container_name: reviews
+  image: org.image.repo.com/reviews-service:latest
+  # build: ../reviews-service/docker
+  mem_limit: 256m
+  ports:
+    - "9530:9530"
+  net: "host"
+  extends:
+    file: common.yml
+    service: constants
+  environment:
+    - CONFIG_FILE=/opt/reviews-service-0.1/conf/application.conf
+    - REVIEW_MONGO_URI
+    - REVIEW_MONGO_DB
+    - MONGO_URI=${REVIEW_MONGO_URI}
+    - MONGO_DB=${REVIEW_MONGO_DB}
+    - JAVA_OPTS=-Xmx256m -Xms256m
+
+promo:
+  container_name: promo
+  image: org.image.repo.com/promo-service:latest
+  # build: ../promo-service/docker
+  ports:
+    - "9520:9520"
+  net: "host"
+  extends:
+    file: common.yml
+    service: constants
+  environment:
+    - CONFIG_FILE=/opt/promo-service-0.1/conf/application.conf
+    - JAVA_OPTS=-Xmx256m -Xms256m
+    - PROMO_URL
+
+mountebank:
+  container_name: mountebank
+  image: org.image.repo.com/mountebank:latest
+  ports:
+    - "4444:4444"
+    - "2525:2525"
+  net: "host"
+  command: mb --configfile /opt/mb/conf/imposters.ejs
+  volumes:
+    - ./mountebank/conf:/opt/mb/conf
+
+localization:
+  container_name: localization
+  image: org.image.repo.com/localization-service:latest
+  mem_limit: 256m
+  ports:
+    - "9650:9650"
+  net: "host"
+  extends:
+    file: common.yml
+    service: constants
+  environment:
+    - CONFIG_FILE=/opt/localization-service-0.1/conf/application.conf
+    - JAVA_OPTS=-Xmx256m -Xms256m
+    - LOCALIZATION_MONGO_URI
+    - LOCALIZATION_MONGO_DB
+
+order:
+  container_name: order
+  image: org.image.repo.com/order-service:latest
+  ports:
+    - "9710:9710"
+  net: "host"
+  extends:
+    file: common.yml
+    service: constants
+  environment:
+    - CONFIG_FILE=/opt/order-service-0.1/conf/application.conf
+    - JAVA_OPTS=-Xmx256m -Xms256m
+
+user_auth:
+  container_name: user_auth
+  image: org.image.repo.com/user-authentication-service:latest
+  ports:
+    - "9780:9780"
+  net: "host"
+  extends:
+    file: common.yml
+    service: constants
+  environment:
+    - CONFIG_FILE=/opt/user-authentication-service-0.1/conf/application.conf
+    - JAVA_OPTS=-Xmx256m -Xms256m
+
+toggles:
+  container_name: toggles
+  image: org.image.repo.com/toggle-service:latest
+  ports:
+    - "9860:9860"
+  net: "host"
+  extends:
+    file: common.yml
+    service: constants
+  environment:
+    - CONFIG_FILE=/opt/toggle-service-0.1/conf/application.conf
+    - JAVA_OPTS=-Xmx256m -Xms256m
+
+swagger_ui:
+  container_name: swagger_ui
+  image: schickling/swagger-ui
+  ports:
+   - "9480:80"
+
+mongo:
+  container_name: mongo
+  image: mongo:3.2
+  ports:
+    - "27017:27017"
+
+kafka:
+  image: wurstmeister/kafka
+  container_name: kafka-broker
+  ports:
+    - "9092:9092"
+  environment:
+    - KAFKA_ADVERTISED_HOST_NAME=127.0.0.1
+    - KAFKA_ADVERTISED_PORT=9092
+    - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+  depends_on:
+    - zookeeper
+zookeeper:
+  image: wurstmeister/zookeeper
+  ports:
+    - "2181:2181"
+  environment:
+    - KAFKA_ADVERTISED_HOST_NAME=zookeeper
+s3:
+  image: localstack/localstack
+  environment:
+    - SERVICES=s3:5000
+    - DEFAULT_REGION=us-east-1
+    - HOSTNAME=127.0.0.1
+  ports:
+    - "5000:5000"
+rest:
+  image: confluentinc/cp-kafka-rest
+  ports:
+    - "8082:8082"
+  environment:
+    - KAFKA_REST_ZOOKEEPER_CONNECT=zookeeper:2181
+    - KAFKA_REST_LISTENERS=http://127.0.0.1:8082
+    - KAFKA_REST_HOST_NAME=127.0.0.1

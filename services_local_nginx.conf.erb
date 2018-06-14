@@ -1,0 +1,95 @@
+user root;
+worker_processes  4;
+daemon off;
+error_log /dev/stdout warn;
+error_log /opt/openresty/nginx/logs/error.log warn;
+
+events {
+    worker_connections  4096;
+    use epoll;
+    accept_mutex off;
+}
+
+http {
+    include /opt/openresty/nginx/conf/*.conf;
+    include /opt/openresty/nginx/conf/mime.types;
+    default_type  application/octet-stream;
+
+    log_format main '"$http_x_forwarded_for" $http_true_client_ip $remote_addr - $remote_user [$time_iso8601] $host "$request" '
+           '$status $body_bytes_sent $upstream_cache_status $cookie_jsessionid $http_akamai_country $cookie_e4x_country $cookie_e4x_currency "$http_referer" '
+           '"$http_user_agent" "$request_time" "$http_correlation_id" "$sent_http_correlation_id"';
+    sendfile        on;
+    keepalive_timeout  25;
+
+    server_tokens off;
+    underscores_in_headers on;
+    gzip  on;
+    gzip_min_length  1100;
+    gzip_buffers     16 8k;
+    gzip_types       text/plain text/css application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+    gzip_disable  "MSIE [1-6]\.";
+    gzip_vary on;
+    gzip_proxied any;
+    proxy_cookie_domain ~<%= proxy_cookie_domain %>$ "";
+
+upstream service1  {
+        least_conn;
+        server <%= local_services['service1'] %>:9460 max_fails=2 fail_timeout=15s;
+}
+
+upstream service2  {
+        least_conn;
+        server <%= local_services['service2'] %>:9240 max_fails=2 fail_timeout=15s;
+}
+
+server {
+    listen       8080;
+    server_name  0.0.0.0;
+
+    #charset koi8-r;
+        access_log  /opt/openresty/nginx/logs/access.log  main;
+        access_log /dev/stdout  main;
+    root   /opt/openresty/nginx/html;
+    index  index.html index.htm;
+
+
+    location /v2/service1 {
+        proxy_set_header Host $host:$server_port;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        client_max_body_size 10m;
+        client_body_buffer_size 128k;
+        proxy_connect_timeout 90;
+        proxy_send_timeout 90;
+        proxy_read_timeout 90;
+        proxy_buffers 32 4k;
+
+        proxy_pass http://service1$request_uri;
+    }
+    error_page   500 502 503 504  /50x.html;
+
+    location /v1/service2 {
+        proxy_set_header Host $host:$server_port;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        client_max_body_size 10m;
+        client_body_buffer_size 128k;
+        proxy_connect_timeout 90;
+        proxy_send_timeout 90;
+        proxy_read_timeout 90;
+        proxy_buffers 32 4k;
+
+        proxy_pass http://service2$request_uri;
+    }
+
+
+    #error_page  404              /404.html;
+
+    # redirect server error pages to the static page /50x.html
+    #
+    error_page   500 502 503 504  /50x.html;
+location = /50x.html {
+        root   /opt/openresty/nginx/html;
+    }
+}
+}

@@ -1,0 +1,49 @@
+{
+  "imposters": [
+    {
+      "protocol": "http",
+      "port": 4444,
+      "stubs": [
+        {
+          "predicates": [
+            {
+              "deepEquals": {
+                "method": "GET"
+              }
+            },
+            {
+              "deepEquals": {
+                "path": "/tool/loadPromoHashmap.jsp"
+              }
+            },
+            {
+              "deepEquals": {
+                "query": {
+                  "bmForm": "promo_hashmap_loader"
+                }
+              }
+            }
+          ],
+          "responses": [
+            {
+              "is": {
+                "statusCode": 200,
+                "headers": {
+                  "Server": "Apache/2.2.15 (Red Hat)",
+                  "Cache-Control": "no-cache=\"Set-Cookie\"",
+                  "X-Powered-By": "Servlet/2.5 JSP/2.1",
+                  "Content-Type": "application/json; charset=UTF-8",
+                  "Set-Cookie": "VIP_PRICE=; domain=; expires=Thursday, 01-Jan-1970 01:00:00 GMT; path=/",
+                  "Connection": "close"
+                },
+                "body":  "<%- stringify(filename, 'promos.ejs') %>",
+                "_mode": "text",
+                "_proxyResponseTime": 90
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
