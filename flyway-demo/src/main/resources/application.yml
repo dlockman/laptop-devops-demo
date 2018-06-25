@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: flyway-demo
+  flyway:
+    locations: classpath:/db/migration
+    schemas: demo
+  jpa.properties.hibernate.temp.use_jdbc_metadata_defaults: false
+  jpa.database-platform: org.hibernate.dialect.PostgreSQL9Dialect
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: password
